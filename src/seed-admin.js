@@ -1,8 +1,7 @@
 import "dotenv/config";
 import fs from "fs";
 import mongoose from "mongoose";
-import bcrypt from "bcryptjs";
-import Admin from "./models/User.js";
+import User from "./models/User.js";
 
 const seedAdmin = async () => {
   try {
@@ -11,18 +10,28 @@ const seedAdmin = async () => {
       fs.readFileSync("./seed-admin.json", "utf-8")
     );
 
-    const existingAdmin = await Admin.findOne({
+    const existingAdmin = await User.findOne({
       email: adminData.email,
     });
 
     if (existingAdmin) {
-      console.log("Admin already exists");
+      existingAdmin.password = adminData.password;
+      existingAdmin.role = "admin";
+      existingAdmin.isActive = true;
+
+      await existingAdmin.save();
+
+      console.log("Admin password reset successfully");
+
       await mongoose.disconnect();
       return;
     }
 
-    adminData.password = await bcrypt.hash(adminData.password, 10);
-    await Admin.create(adminData);
+    await User.create({
+      ...adminData,
+      role: "admin",
+    });
+
     console.log(`Admin created: ${adminData.email}`);
     await mongoose.disconnect();
   } catch (error) {
