@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "nodemon src/server.js",
+    "seed:admin": "node src/seed-admin.js",
     "start": "node src/server.js",
     "test": "echo \"No tests configured yet\" && exit 0"
   },
