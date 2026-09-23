@@ -80,7 +80,6 @@ import { validateCoupon, createCoupon, updateCoupon, deleteCoupon } from '../con
 import { protect, authorize } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
-
 router.post('/validate', protect, validateCoupon);
 router.post('/', protect, authorize('admin'), createCoupon);
 router.put('/:id', protect, authorize('admin'), updateCoupon);
