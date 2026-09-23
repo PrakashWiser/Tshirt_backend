@@ -7,11 +7,18 @@ import connectDatabase from "./config/database.js";
 const startServer = async () => {
   try {
     await connectDatabase();
+
     const port = Number(process.env.PORT || 3100);
+
+    const allowedOrigins = process.env.FRONTEND_URL
+      ? process.env.FRONTEND_URL.split(",").map((origin) => origin.trim())
+      : ["http://localhost:5173"];
+
     const server = http.createServer(app);
+
     const io = new Server(server, {
       cors: {
-        origin: process.env.FRONTEND_URL || "http://localhost:5173",
+        origin: allowedOrigins,
         credentials: true,
       },
     });
@@ -20,6 +27,7 @@ const startServer = async () => {
       socket.on("join-admin", () => {
         socket.join("admin");
       });
+
       socket.on("join-user", (userId) => {
         socket.join(`user-${userId}`);
       });
@@ -28,10 +36,14 @@ const startServer = async () => {
         socket.join(`order-${orderId}`);
       });
     });
+
     app.set("io", io);
-    server.listen(port);
-    console.log(`🚀 Server Running on port ${port}`);
+
+    server.listen(port, () => {
+      console.log(`🚀 Server Running on port ${port}`);
+    });
   } catch (error) {
+    console.error("Server startup error:", error);
     process.exit(1);
   }
 };
