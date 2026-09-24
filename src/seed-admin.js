@@ -6,10 +6,7 @@ import User from "./models/User.js";
 const seedAdmin = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI);
-    const adminData = JSON.parse(
-      fs.readFileSync("./seed-admin.json", "utf-8")
-    );
-
+    const adminData = JSON.parse(fs.readFileSync("./seed-admin.json", "utf-8"));
     const existingAdmin = await User.findOne({
       email: adminData.email,
     });
@@ -18,11 +15,7 @@ const seedAdmin = async () => {
       existingAdmin.password = adminData.password;
       existingAdmin.role = "admin";
       existingAdmin.isActive = true;
-
       await existingAdmin.save();
-
-      console.log("Admin password reset successfully");
-
       await mongoose.disconnect();
       return;
     }
@@ -31,8 +24,6 @@ const seedAdmin = async () => {
       ...adminData,
       role: "admin",
     });
-
-    console.log(`Admin created: ${adminData.email}`);
     await mongoose.disconnect();
   } catch (error) {
     console.error("Seed failed:", error);

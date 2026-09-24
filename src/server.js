@@ -7,17 +7,15 @@ import connectDatabase from "./config/database.js";
 const startServer = async () => {
   try {
     await connectDatabase();
-
+    
     const port = Number(process.env.PORT || 3100);
-
     const allowedOrigins = process.env.FRONTEND_URL
       ? process.env.FRONTEND_URL.split(",").map((origin) => origin.trim())
       : ["http://localhost:5173"];
 
     const server = http.createServer(app);
-
     const io = new Server(server, {
-      cors: {
+      cors: { 
         origin: allowedOrigins,
         credentials: true,
       },

@@ -2,9 +2,6 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
-import fileUpload from "express-fileupload";
-import path from "path";
-import { fileURLToPath } from "url";
 import swaggerUi from "swagger-ui-express";
 import swaggerSpec from "./config/swagger.js";
 import authRoutes from "./routes/authRoutes.js";
@@ -19,19 +16,15 @@ import reviewRoutes from "./routes/reviewRoutes.js";
 import couponRoutes from "./routes/couponRoutes.js";
 import contactRoutes from "./routes/contactRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
-import uploadRoutes from "./routes/uploadRoutes.js";
 import bannerRoutes from "./routes/bannerRoutes.js";
+import fileUpload from "express-fileupload";
+
 import {
   notFoundHandler,
   globalErrorHandler,
 } from "./middleware/errorMiddleware.js";
 
 const app = express();
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 const allowedOrigins = process.env.FRONTEND_URL
   ? process.env.FRONTEND_URL.split(",").map((origin) => origin.trim())
@@ -52,34 +45,33 @@ app.use(
 
 app.use(helmet());
 
-app.use(
-  fileUpload({
-    createParentPath: true,
-    limits: { fileSize: 5 * 1024 * 1024 },
-    abortOnLimit: true,
-  }),
-);
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+app.use(
+  fileUpload({
+    useTempFiles: true,
+    tempFileDir: "/tmp/",
+    limits: {
+      fileSize: 5 * 1024 * 1024,
+    },
+    abortOnLimit: true,
+  }),
+);
 
 app.get("/", (req, res) => {
   res.status(200).json({
     success: true,
     message: "Hello world",
-    data: { status: "ok" },
-  });
-});
-
-app.get("/api/health", (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: "Backend is running successfully",
-    data: { status: "ok" },
+    data: {
+      status: "ok",
+    },
   });
 });
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/categories", categoryRoutes);
@@ -92,17 +84,9 @@ app.use("/api/coupons", couponRoutes);
 app.use("/api/contact", contactRoutes);
 app.use("/api/enquiries", contactRoutes);
 app.use("/api/admin", adminRoutes);
-app.use("/api/upload", uploadRoutes);
 app.use("/api/banners", bannerRoutes);
-app.use("/api", reviewRoutes);
 
-app.get("/hello", (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: "Hello world",
-    data: { status: "ok" },
-  });
-});
+app.use("/api", reviewRoutes);
 
 app.use(notFoundHandler);
 app.use(globalErrorHandler);
