@@ -1,18 +1,25 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import { getJwtSecret } from '../config/jwt.js';
 import { successResponse, errorResponse } from '../utils/response.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
-
 export const generateAccessToken = (user) =>
-  jwt.sign({ id: user._id, email: user.email, role: user.role }, JWT_SECRET, {
-    expiresIn: '1h',
-  });
+  jwt.sign(
+    { id: user._id, email: user.email, role: user.role, tokenType: 'access' },
+    getJwtSecret(),
+    {
+      expiresIn: '1h',
+    },
+  );
 
 export const generateRefreshToken = (user) =>
-  jwt.sign({ id: user._id, email: user.email, role: user.role }, JWT_SECRET, {
-    expiresIn: '7d',
-  });
+  jwt.sign(
+    { id: user._id, email: user.email, role: user.role, tokenType: 'refresh' },
+    getJwtSecret(),
+    {
+      expiresIn: '7d',
+    },
+  );
 
 const generateToken = (user) => generateAccessToken(user);
 
@@ -83,11 +90,17 @@ export const refreshAccessToken = async (req, res) => {
       return errorResponse(res, 'Refresh token missing', 401);
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, getJwtSecret());
+    if (decoded.tokenType !== 'refresh') {
+      return errorResponse(res, 'Invalid refresh token', 401);
+    }
     const user = await User.findById(decoded.id).select('-password');
 
     if (!user) {
       return errorResponse(res, 'User not found', 401);
+    }
+    if (!user.isActive) {
+      return errorResponse(res, 'Your account is inactive', 403);
     }
 
     const newAccessToken = generateAccessToken(user);

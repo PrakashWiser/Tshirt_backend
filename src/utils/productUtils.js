@@ -1,5 +1,49 @@
 import Product from "../models/Product.js";
 
+export const findActiveVariant = (product, size, color) =>
+  product?.variants?.find(
+    (variant) =>
+      variant.isActive &&
+      String(variant.size).trim().toLowerCase() ===
+        String(size).trim().toLowerCase() &&
+      String(variant.color).trim().toLowerCase() ===
+        String(color).trim().toLowerCase(),
+  ) || null;
+
+export const getVariantPrice = (variant) =>
+  variant.salePrice > 0 ? variant.salePrice : variant.price;
+
+export const reserveVariantStock = async (productId, variantId, quantity) => {
+  const result = await Product.updateOne(
+    {
+      _id: productId,
+      isActive: true,
+      variants: {
+        $elemMatch: {
+          _id: variantId,
+          isActive: true,
+          stock: { $gte: quantity },
+        },
+      },
+    },
+    { $inc: { 'variants.$.stock': -quantity } },
+  );
+
+  return result.modifiedCount === 1;
+};
+
+export const releaseVariantStock = async (productId, variantId, quantity) => {
+  const result = await Product.updateOne(
+    {
+      _id: productId,
+      variants: { $elemMatch: { _id: variantId } },
+    },
+    { $inc: { 'variants.$.stock': quantity } },
+  );
+
+  return result.modifiedCount === 1;
+};
+
 export const clean = (v) =>
   String(v || "")
     .trim()

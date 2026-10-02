@@ -1,8 +1,7 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import { getJwtSecret } from '../config/jwt.js';
 import { errorResponse } from '../utils/response.js';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
 
 export const protect = async (req, res, next) => {
   try {
@@ -11,7 +10,10 @@ export const protect = async (req, res, next) => {
     if (!token) {
       return errorResponse(res, 'Authentication token missing', 401);
     }
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, getJwtSecret());
+    if (decoded.tokenType !== 'access') {
+      return errorResponse(res, 'Invalid token', 401);
+    }
     const user = await User.findById(decoded.id).select('-password');
     if (!user) {
       return errorResponse(res, 'User not found', 401);

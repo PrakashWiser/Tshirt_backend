@@ -1,6 +1,5 @@
 import mongoose from "mongoose";
 import Product from "../models/Product.js";
-import Category from "../models/Category.js";
 import { successResponse, errorResponse } from "../utils/response.js";
 import {
   deleteImageFromCloudinary,
@@ -13,6 +12,27 @@ import {
   validateVariants,
   checkExistingSku,
 } from "../utils/productUtils.js";
+import { getProductCategoryError } from "../utils/categoryHierarchy.js";
+
+const productCategoryPopulation = {
+  path: "category",
+  select: "name slug level parentCategory",
+  populate: {
+    path: "parentCategory",
+    select: "name slug level parentCategory",
+  },
+};
+
+const serializeProductCategory = (product) => {
+  const serialized = product.toObject();
+  const category = serialized.category;
+
+  if (category?.level === "child" && category.parentCategory?.level === "sub") {
+    serialized.category = category.parentCategory;
+  }
+
+  return serialized;
+};
 
 const buildProductQuery = (query) => {
   const filter = {
@@ -155,7 +175,7 @@ export const getProducts = async (req, res, next) => {
     }
 
     const baseQuery = Product.find(query)
-      .populate("category", "name slug")
+      .populate(productCategoryPopulation)
       .skip((currentPage - 1) * currentLimit)
       .limit(currentLimit);
 
@@ -175,7 +195,7 @@ export const getProducts = async (req, res, next) => {
     ]);
 
     return successResponse(res, "Products fetched successfully", {
-      products,
+      products: products.map(serializeProductCategory),
       pagination: {
         page: currentPage,
         limit: currentLimit,
@@ -193,13 +213,17 @@ export const getProductBySlug = async (req, res, next) => {
     const product = await Product.findOne({
       slug: req.params.slug,
       isActive: true,
-    }).populate("category", "name slug");
+    }).populate(productCategoryPopulation);
 
     if (!product) {
       return errorResponse(res, "Product not found", 404);
     }
 
-    return successResponse(res, "Product fetched successfully", product);
+    return successResponse(
+      res,
+      "Product fetched successfully",
+      serializeProductCategory(product),
+    );
   } catch (error) {
     next(error);
   }
@@ -213,7 +237,7 @@ export const getTrendingProducts = async (req, res, next) => {
       isActive: true,
       isTrending: true,
     })
-      .populate("category", "name slug")
+      .populate(productCategoryPopulation)
       .sort({
         createdAt: -1,
       })
@@ -222,7 +246,7 @@ export const getTrendingProducts = async (req, res, next) => {
     return successResponse(
       res,
       "Trending products fetched successfully",
-      products,
+      products.map(serializeProductCategory),
     );
   } catch (error) {
     next(error);
@@ -257,15 +281,8 @@ export const createProduct = async (req, res, next) => {
       return errorResponse(res, "Product slug is required", 400);
     }
 
-    if (!mongoose.Types.ObjectId.isValid(category)) {
-      return errorResponse(res, "Invalid category", 400);
-    }
-
-    const categoryExists = await Category.findById(category);
-
-    if (!categoryExists) {
-      return errorResponse(res, "Invalid category", 400);
-    }
+    const categoryError = await getProductCategoryError(category);
+    if (categoryError) return errorResponse(res, categoryError, 400);
 
     const variantImageFiles = extractVariantImageFiles(req.files);
 
@@ -359,15 +376,14 @@ export const updateProduct = async (req, res, next) => {
     }
 
     if (req.body.category) {
-      if (!mongoose.Types.ObjectId.isValid(req.body.category)) {
-        return errorResponse(res, "Invalid category", 400);
-      }
-
-      const categoryExists = await Category.findById(req.body.category);
-
-      if (!categoryExists) {
-        return errorResponse(res, "Invalid category", 400);
-      }
+      const categoryError = await getProductCategoryError(
+        req.body.category,
+        {
+          allowExistingLegacy:
+            String(req.body.category) === String(product.category),
+        },
+      );
+      if (categoryError) return errorResponse(res, categoryError, 400);
     }
 
     const variantImageFiles = extractVariantImageFiles(req.files);
