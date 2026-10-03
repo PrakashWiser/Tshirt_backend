@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import Cart from '../models/Cart.js';
 import Order from '../models/Order.js';
+import AuditLog from '../models/AuditLog.js';
 import {
   createPaymentOrder,
   verifyPayment,
@@ -64,6 +65,7 @@ test('createPaymentOrder scopes lookup to the authenticated owner', async () => 
 test('verifyPayment confirms only the owner’s matching pending Razorpay order', async () => {
   const originalOrderFindOne = Order.findOne;
   const originalCartFindOneAndUpdate = Cart.findOneAndUpdate;
+  const originalAuditLogCreate = AuditLog.create;
   const originalSecret = process.env.RAZORPAY_KEY_SECRET;
   const secret = 'test-secret';
   const order = {
@@ -82,6 +84,7 @@ test('verifyPayment confirms only the owner’s matching pending Razorpay order'
     return order;
   };
   Cart.findOneAndUpdate = async () => {};
+  AuditLog.create = async () => ({});
 
   try {
     await verifyPayment(
@@ -106,6 +109,7 @@ test('verifyPayment confirms only the owner’s matching pending Razorpay order'
   } finally {
     Order.findOne = originalOrderFindOne;
     Cart.findOneAndUpdate = originalCartFindOneAndUpdate;
+    AuditLog.create = originalAuditLogCreate;
     if (originalSecret === undefined) {
       delete process.env.RAZORPAY_KEY_SECRET;
     } else {

@@ -1,5 +1,6 @@
 import Contact from "../models/Contact.js";
 import { successResponse, errorResponse } from "../utils/response.js";
+import recordAuditLog from "../utils/auditLog.js";
 
 export const createContact = async (req, res, next) => {
   try {
@@ -47,10 +48,20 @@ export const updateContactStatus = async (req, res, next) => {
     if (!contact) {
       return errorResponse(res, "Enquiry not found", 404);
     }
+    const previousStatus = contact.status;
     if (status) {
       contact.status = status;
     }
     await contact.save();
+    if (previousStatus !== contact.status) {
+      await recordAuditLog(req, {
+        action: "enquiry.status_changed",
+        resource: "enquiry",
+        resourceId: contact._id,
+        description: `Enquiry from ${contact.name} was marked ${contact.status}`,
+        metadata: { status: contact.status },
+      });
+    }
     return successResponse(res, "Enquiry status updated successfully", contact);
   } catch (error) {
     next(error);

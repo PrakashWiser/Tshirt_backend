@@ -4,6 +4,7 @@ import Razorpay from 'razorpay';
 import Order from '../models/Order.js';
 import Cart from '../models/Cart.js';
 import { successResponse, errorResponse } from '../utils/response.js';
+import recordAuditLog from '../utils/auditLog.js';
 
 const getRazorpayClient = () => {
   const keyId = process.env.RAZORPAY_KEY_ID;
@@ -143,6 +144,13 @@ export const verifyPayment = async (req, res, next) => {
     order.razorpaySignature = razorpay_signature;
     await order.save();
     await Cart.findOneAndUpdate({ user: req.user._id }, { items: [] });
+    await recordAuditLog(req, {
+      action: 'order.payment_verified',
+      resource: 'order',
+      resourceId: order._id,
+      description: `Payment was verified for order ${order.orderNumber}`,
+      metadata: { orderNumber: order.orderNumber, totalAmount: order.totalAmount },
+    });
 
     return successResponse(res, 'Payment verified successfully', order);
   } catch (error) {

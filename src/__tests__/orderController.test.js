@@ -4,6 +4,7 @@ import Address from '../models/Address.js';
 import Cart from '../models/Cart.js';
 import Order from '../models/Order.js';
 import Product from '../models/Product.js';
+import AuditLog from '../models/AuditLog.js';
 import { cancelOrder, createOrder } from '../controllers/orderController.js';
 
 test('createOrder calculates prices from variants and combines duplicate lines', async () => {
@@ -12,6 +13,7 @@ test('createOrder calculates prices from variants and combines duplicate lines',
   const originalOrderCreate = Order.create;
   const originalProductFindById = Product.findById;
   const originalProductUpdateOne = Product.updateOne;
+  const originalAuditLogCreate = AuditLog.create;
   const productId = '507f1f77bcf86cd799439011';
   const product = {
     _id: productId,
@@ -60,6 +62,7 @@ test('createOrder calculates prices from variants and combines duplicate lines',
     return data;
   };
   Product.findById = async () => product;
+  AuditLog.create = async () => ({});
   Product.updateOne = async (filter, update) => {
     stockReservation = { filter, update };
     return { modifiedCount: 1 };
@@ -89,6 +92,7 @@ test('createOrder calculates prices from variants and combines duplicate lines',
     Order.create = originalOrderCreate;
     Product.findById = originalProductFindById;
     Product.updateOne = originalProductUpdateOne;
+    AuditLog.create = originalAuditLogCreate;
   }
 
   assert.equal(response.statusCode, 201);

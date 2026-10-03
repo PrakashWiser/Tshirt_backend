@@ -1,5 +1,34 @@
 /**
  * @openapi
+ * /api/admin/audit-logs:
+ *   get:
+ *     summary: Get paginated admin audit logs
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: resource
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: action
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Audit logs returned
+ */
+/**
+ * @openapi
  * /api/admin/customers:
  *   get:
  *     summary: Get all customers
@@ -31,7 +60,7 @@
 
 import express from 'express';
 import { protect, authorize } from '../middleware/authMiddleware.js';
-import { getCustomers, getDashboardStats, getAdminNotifications, updateCustomerStatus } from '../controllers/adminController.js';
+import { getCustomers, getDashboardStats, getAdminNotifications, getAuditLogs, updateCustomerStatus } from '../controllers/adminController.js';
 import { getCurrentUser, updateCurrentUserProfile, updateCurrentUserProfilePhoto, changeCurrentUserPassword } from '../controllers/authController.js';
 import { getContacts } from '../controllers/contactController.js';
 import {
@@ -47,6 +76,7 @@ const router = express.Router();
 router.use(protect, authorize('admin'));
 router.get('/stats', getDashboardStats);
 router.get('/notifications', getAdminNotifications);
+router.get('/audit-logs', getAuditLogs);
 router.get('/profile', getCurrentUser);
 router.put('/profile', updateCurrentUserProfile);
 router.put('/profile-photo', updateCurrentUserProfilePhoto);

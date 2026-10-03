@@ -1,5 +1,6 @@
 import Coupon from '../models/Coupon.js';
 import { successResponse, errorResponse } from '../utils/response.js';
+import recordAuditLog from '../utils/auditLog.js';
 
 export const getAllCoupons = async (req, res, next) => {
   try {
@@ -82,6 +83,13 @@ export const validateCoupon = async (req, res, next) => {
 export const createCoupon = async (req, res, next) => {
   try {
     const coupon = await Coupon.create(req.body);
+    await recordAuditLog(req, {
+      action: 'coupon.created',
+      resource: 'coupon',
+      resourceId: coupon._id,
+      description: `Coupon ${coupon.code} was created`,
+      metadata: { code: coupon.code },
+    });
     return successResponse(res, 'Coupon created successfully', coupon, 201);
   } catch (error) {
     next(error);
@@ -95,6 +103,13 @@ export const updateCoupon = async (req, res, next) => {
 
     Object.assign(coupon, req.body);
     await coupon.save();
+    await recordAuditLog(req, {
+      action: 'coupon.updated',
+      resource: 'coupon',
+      resourceId: coupon._id,
+      description: `Coupon ${coupon.code} was updated`,
+      metadata: { code: coupon.code },
+    });
     return successResponse(res, 'Coupon updated successfully', coupon);
   } catch (error) {
     next(error);
@@ -106,6 +121,13 @@ export const deleteCoupon = async (req, res, next) => {
     const coupon = await Coupon.findByIdAndDelete(req.params.id);
     if (!coupon) return errorResponse(res, 'Coupon not found', 404);
 
+    await recordAuditLog(req, {
+      action: 'coupon.deleted',
+      resource: 'coupon',
+      resourceId: coupon._id,
+      description: `Coupon ${coupon.code} was deleted`,
+      metadata: { code: coupon.code },
+    });
     return successResponse(res, 'Coupon deleted successfully', null);
   } catch (error) {
     next(error);
@@ -117,11 +139,21 @@ export const updateCouponStatus = async (req, res, next) => {
     const coupon = await Coupon.findById(req.params.id);
     if (!coupon) return errorResponse(res, 'Coupon not found', 404);
 
+    const previousStatus = coupon.isActive;
     coupon.isActive = typeof req.body.isActive === 'boolean'
       ? req.body.isActive
       : coupon.isActive;
 
     await coupon.save();
+    if (previousStatus !== coupon.isActive) {
+      await recordAuditLog(req, {
+        action: 'coupon.status_changed',
+        resource: 'coupon',
+        resourceId: coupon._id,
+        description: `Coupon ${coupon.code} was ${coupon.isActive ? 'activated' : 'deactivated'}`,
+        metadata: { isActive: coupon.isActive },
+      });
+    }
 
     return successResponse(res, 'Coupon status updated successfully', coupon);
   } catch (error) {

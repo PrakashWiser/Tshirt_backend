@@ -13,6 +13,12 @@ import {
   checkExistingSku,
 } from "../utils/productUtils.js";
 import { getProductCategoryError } from "../utils/categoryHierarchy.js";
+import recordAuditLog from "../utils/auditLog.js";
+
+const getProductImage = (product) =>
+  product.images?.[0] ||
+  product.variants?.find((variant) => variant.images?.length)?.images[0] ||
+  "";
 
 const productCategoryPopulation = {
   path: "category",
@@ -341,6 +347,14 @@ export const createProduct = async (req, res, next) => {
       isActive: isActive === true || isActive === "true",
     });
 
+    await recordAuditLog(req, {
+      action: "product.created",
+      resource: "product",
+      resourceId: product._id,
+      description: `Product ${product.name} was created`,
+      metadata: { name: product.name, slug: product.slug, image: getProductImage(product) },
+    });
+
     return successResponse(res, "Product created successfully", product, 201);
   } catch (error) {
     await cleanupUploadedVariantImages(uploadedVariantImages);
@@ -476,6 +490,13 @@ export const updateProduct = async (req, res, next) => {
     delete product.removedImages;
 
     await product.save();
+    await recordAuditLog(req, {
+      action: "product.updated",
+      resource: "product",
+      resourceId: product._id,
+      description: `Product ${product.name} was updated`,
+      metadata: { name: product.name, image: getProductImage(product) },
+    });
 
     for (const url of removedImages) {
       const image = String(url || "");
@@ -524,6 +545,13 @@ export const deleteProduct = async (req, res, next) => {
     }
 
     await Product.findByIdAndDelete(req.params.id);
+    await recordAuditLog(req, {
+      action: "product.deleted",
+      resource: "product",
+      resourceId: product._id,
+      description: `Product ${product.name} was deleted`,
+      metadata: { name: product.name, image: getProductImage(product) },
+    });
 
     for (const variant of product.variants || []) {
       for (const url of variant.images || []) {
@@ -566,8 +594,18 @@ export const patchProductStatus = async (req, res, next) => {
       return errorResponse(res, "isActive must be boolean", 400);
     }
 
+    const previousStatus = product.isActive;
     product.isActive = isActive;
     await product.save();
+    if (previousStatus !== isActive) {
+      await recordAuditLog(req, {
+        action: "product.status_changed",
+        resource: "product",
+        resourceId: product._id,
+        description: `Product ${product.name} was ${isActive ? "activated" : "deactivated"}`,
+        metadata: { isActive, image: getProductImage(product) },
+      });
+    }
 
     return successResponse(res, "Product status updated successfully", product);
   } catch (error) {

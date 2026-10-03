@@ -4,6 +4,7 @@ import Product from '../models/Product.js';
 import Address from '../models/Address.js';
 import Cart from '../models/Cart.js';
 import { successResponse, errorResponse } from '../utils/response.js';
+import recordAuditLog from '../utils/auditLog.js';
 import {
   findActiveVariant,
   getVariantPrice,
@@ -145,6 +146,13 @@ export const createOrder = async (req, res, next) => {
     });
     createdOrderId = order._id;
 
+    await recordAuditLog(req, {
+      action: 'order.created',
+      resource: 'order',
+      resourceId: order._id,
+      description: `Order ${order.orderNumber} was placed`,
+      metadata: { orderNumber: order.orderNumber, totalAmount: order.totalAmount },
+    });
     if (paymentMethod !== 'razorpay') {
       await Cart.findOneAndUpdate({ user: req.user._id }, { items: [] });
     }
@@ -206,6 +214,13 @@ export const cancelOrder = async (req, res, next) => {
     await restoreReservedStock(
       order.items.filter((item) => item.variant),
     );
+    await recordAuditLog(req, {
+      action: 'order.cancelled',
+      resource: 'order',
+      resourceId: order._id,
+      description: `Order ${order.orderNumber} was cancelled`,
+      metadata: { orderNumber: order.orderNumber },
+    });
 
     return successResponse(res, 'Order cancelled successfully', order);
   } catch (error) {
