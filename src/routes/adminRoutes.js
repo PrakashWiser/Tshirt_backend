@@ -57,11 +57,23 @@
  *       200:
  *         description: Customer status updated
  */
+/**
+ * @openapi
+ * /api/admin/auth/logout:
+ *   post:
+ *     summary: Log out the authenticated admin and revoke issued tokens
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Admin logged out successfully
+ */
 
 import express from 'express';
 import { protect, authorize } from '../middleware/authMiddleware.js';
 import { getCustomers, getDashboardStats, getAdminNotifications, getAuditLogs, updateCustomerStatus } from '../controllers/adminController.js';
-import { getCurrentUser, updateCurrentUserProfile, updateCurrentUserProfilePhoto, changeCurrentUserPassword } from '../controllers/authController.js';
+import { getCurrentUser, updateCurrentUserProfile, updateCurrentUserProfilePhoto, changeCurrentUserPassword, logoutUser } from '../controllers/authController.js';
 import { getContacts } from '../controllers/contactController.js';
 import {
   getAllCoupons,
@@ -78,6 +90,7 @@ router.get('/stats', getDashboardStats);
 router.get('/notifications', getAdminNotifications);
 router.get('/audit-logs', getAuditLogs);
 router.get('/profile', getCurrentUser);
+router.post('/auth/logout', logoutUser);
 router.put('/profile', updateCurrentUserProfile);
 router.put('/profile-photo', updateCurrentUserProfilePhoto);
 router.put('/change-password', changeCurrentUserPassword);

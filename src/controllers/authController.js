@@ -2,10 +2,17 @@ import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import { getJwtSecret } from '../config/jwt.js';
 import { successResponse, errorResponse } from '../utils/response.js';
+import recordAuditLog from '../utils/auditLog.js';
 
 export const generateAccessToken = (user) =>
   jwt.sign(
-    { id: user._id, email: user.email, role: user.role, tokenType: 'access' },
+    {
+      id: user._id,
+      email: user.email,
+      role: user.role,
+      tokenType: 'access',
+      tokenVersion: user.tokenVersion || 0,
+    },
     getJwtSecret(),
     {
       expiresIn: '1h',
@@ -14,7 +21,13 @@ export const generateAccessToken = (user) =>
 
 export const generateRefreshToken = (user) =>
   jwt.sign(
-    { id: user._id, email: user.email, role: user.role, tokenType: 'refresh' },
+    {
+      id: user._id,
+      email: user.email,
+      role: user.role,
+      tokenType: 'refresh',
+      tokenVersion: user.tokenVersion || 0,
+    },
     getJwtSecret(),
     {
       expiresIn: '7d',
@@ -99,6 +112,9 @@ export const refreshAccessToken = async (req, res) => {
     if (!user) {
       return errorResponse(res, 'User not found', 401);
     }
+    if ((decoded.tokenVersion || 0) !== (user.tokenVersion || 0)) {
+      return errorResponse(res, 'Refresh token has been revoked', 401);
+    }
     if (!user.isActive) {
       return errorResponse(res, 'Your account is inactive', 403);
     }
@@ -119,9 +135,27 @@ export const refreshAccessToken = async (req, res) => {
   }
 };
 
-export const logoutUser = async (req, res) => {
-  res.clearCookie('token');
-  return successResponse(res, 'Logged out successfully', null, 200);
+export const logoutUser = async (req, res, next) => {
+  try {
+    await User.updateOne(
+      { _id: req.user._id },
+      { $inc: { tokenVersion: 1 } },
+    );
+
+    if (req.user.role === 'admin') {
+      await recordAuditLog(req, {
+        action: 'admin.logout',
+        resource: 'admin',
+        resourceId: req.user._id,
+        description: `Admin ${req.user.name} logged out`,
+      });
+    }
+
+    res.clearCookie('token');
+    return successResponse(res, 'Logged out successfully', null, 200);
+  } catch (error) {
+    next(error);
+  }
 };
 
 export const getCurrentUser = async (req, res) => {

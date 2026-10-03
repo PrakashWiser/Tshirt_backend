@@ -18,6 +18,9 @@ export const protect = async (req, res, next) => {
     if (!user) {
       return errorResponse(res, 'User not found', 401);
     }
+    if ((decoded.tokenVersion || 0) !== (user.tokenVersion || 0)) {
+      return errorResponse(res, 'Authentication token has been revoked', 401);
+    }
     req.user = user;
     next();
   } catch (error) {
