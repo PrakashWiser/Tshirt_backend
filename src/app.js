@@ -64,11 +64,7 @@ app.use(
 
 app.get("/", (req, res) => {
   res.status(200).json({
-    success: true,
     message: "Hello world",
-    data: {
-      status: "ok",
-    },
   });
 });
 
@@ -89,7 +85,6 @@ app.use("/api/contact", contactRoutes);
 app.use("/api/enquiries", contactRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/banners", bannerRoutes);
-
 app.use("/api", reviewRoutes);
 
 app.use(notFoundHandler);

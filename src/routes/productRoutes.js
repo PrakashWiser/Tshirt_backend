@@ -34,12 +34,13 @@
  */
 
 import express from 'express';
-import { getProducts, getProductBySlug, getTrendingProducts, createProduct, updateProduct, deleteProduct, patchProductStatus } from '../controllers/productController.js';
+import { getProducts, getProductBySlug, getTrendingProducts, createProduct, updateProduct, deleteProduct, patchProductStatus, getBestSellerProducts } from '../controllers/productController.js';
 import { protect, authorize } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
 router.get('/trending', getTrendingProducts);
+router.get("/best-sellers", getBestSellerProducts);
 router.get('/', getProducts);
 router.get('/:slug', getProductBySlug);
 router.post('/', protect, authorize('admin'), createProduct);

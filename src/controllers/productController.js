@@ -238,7 +238,6 @@ export const getProductBySlug = async (req, res, next) => {
 export const getTrendingProducts = async (req, res, next) => {
   try {
     const { limit = 8 } = req.query;
-
     const products = await Product.find({
       isActive: true,
       isTrending: true,
@@ -248,10 +247,32 @@ export const getTrendingProducts = async (req, res, next) => {
         createdAt: -1,
       })
       .limit(Number(limit));
-
     return successResponse(
       res,
       "Trending products fetched successfully",
+      products.map(serializeProductCategory),
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getBestSellerProducts = async (req, res, next) => {
+  try {
+    const { limit = 8 } = req.query;
+    const products = await Product.find({
+      isActive: true,
+      isBestSeller: true,
+    })
+      .populate(productCategoryPopulation)
+      .sort({
+        createdAt: -1,
+      })
+      .limit(Number(limit));
+
+    return successResponse(
+      res,
+      "Best seller products fetched successfully",
       products.map(serializeProductCategory),
     );
   } catch (error) {
@@ -352,7 +373,11 @@ export const createProduct = async (req, res, next) => {
       resource: "product",
       resourceId: product._id,
       description: `Product ${product.name} was created`,
-      metadata: { name: product.name, slug: product.slug, image: getProductImage(product) },
+      metadata: {
+        name: product.name,
+        slug: product.slug,
+        image: getProductImage(product),
+      },
     });
 
     return successResponse(res, "Product created successfully", product, 201);
@@ -390,13 +415,10 @@ export const updateProduct = async (req, res, next) => {
     }
 
     if (req.body.category) {
-      const categoryError = await getProductCategoryError(
-        req.body.category,
-        {
-          allowExistingLegacy:
-            String(req.body.category) === String(product.category),
-        },
-      );
+      const categoryError = await getProductCategoryError(req.body.category, {
+        allowExistingLegacy:
+          String(req.body.category) === String(product.category),
+      });
       if (categoryError) return errorResponse(res, categoryError, 400);
     }
 
