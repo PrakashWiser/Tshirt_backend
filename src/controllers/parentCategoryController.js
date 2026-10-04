@@ -33,6 +33,23 @@ export const getParentCategories = async (req, res, next) => {
   }
 };
 
+export const getPublicParentCategories = async (req, res, next) => {
+  try {
+    const categories = await Category.find({
+      level: "parent",
+      isActive: true,
+    }).sort({ name: 1 });
+
+    return successResponse(
+      res,
+      "Parent categories fetched successfully",
+      categories.map(serializeParentCategory),
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const createParentCategory = async (req, res, next) => {
   let uploadedImage = null;
 

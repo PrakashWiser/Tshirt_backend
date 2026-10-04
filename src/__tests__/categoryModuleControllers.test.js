@@ -4,6 +4,7 @@ import Category from '../models/Category.js';
 import {
   createParentCategory,
   deleteParentCategory,
+  getPublicParentCategories,
 } from '../controllers/parentCategoryController.js';
 import { createSubCategory } from '../controllers/subCategoryController.js';
 
@@ -52,6 +53,56 @@ test('createParentCategory stores status and optional image fields', async () =>
   assert.equal(created.level, 'parent');
   assert.equal(created.isActive, false);
   assert.equal(created.image, '');
+});
+
+test('getPublicParentCategories returns only active parent categories', async () => {
+  const originalFind = Category.find;
+  const categories = [
+    {
+      _id: '507f1f77bcf86cd799439011',
+      name: 'Men',
+      image: 'https://example.com/men.jpg',
+      isActive: true,
+      toObject() {
+        return {
+          _id: this._id,
+          name: this.name,
+          image: this.image,
+          isActive: this.isActive,
+        };
+      },
+    },
+  ];
+  const response = createResponse();
+  let filter;
+
+  Category.find = (query) => {
+    filter = query;
+    return {
+      async sort(sortOrder) {
+        assert.deepEqual(sortOrder, { name: 1 });
+        return categories;
+      },
+    };
+  };
+
+  try {
+    await getPublicParentCategories({}, response, (error) => {
+      throw error;
+    });
+  } finally {
+    Category.find = originalFind;
+  }
+
+  assert.deepEqual(filter, { level: 'parent', isActive: true });
+  assert.equal(response.body.success, true);
+  assert.deepEqual(response.body.data[0], {
+    _id: '507f1f77bcf86cd799439011',
+    name: 'Men',
+    image: 'https://example.com/men.jpg',
+    isActive: true,
+    status: true,
+  });
 });
 
 test('createSubCategory maps parentCategoryId and rejects duplicate siblings', async () => {
