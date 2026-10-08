@@ -12,7 +12,10 @@ import {
   validateVariants,
   checkExistingSku,
 } from "../utils/productUtils.js";
-import { getProductCategoryError } from "../utils/categoryHierarchy.js";
+import {
+  getProductCategoryError,
+  getCategoryAndSubCategoryIds,
+} from "../utils/categoryHierarchy.js";
 import recordAuditLog from "../utils/auditLog.js";
 
 const getProductImage = (product) =>
@@ -40,7 +43,7 @@ const serializeProductCategory = (product) => {
   return serialized;
 };
 
-const buildProductQuery = (query) => {
+const buildProductQuery = async (query) => {
   const filter = {
     isActive: true,
   };
@@ -62,7 +65,10 @@ const buildProductQuery = (query) => {
   }
 
   if (query.category) {
-    filter.category = query.category;
+    const categoryIds = await getCategoryAndSubCategoryIds(query.category);
+
+    filter.category =
+      categoryIds.length > 0 ? { $in: categoryIds } : query.category;
   }
 
   if (query.size) {
@@ -170,7 +176,7 @@ export const getProducts = async (req, res, next) => {
 
     const currentLimit = Math.max(Number(limit), 1);
 
-    const query = buildProductQuery(req.query);
+    const query = await buildProductQuery(req.query);
 
     const sortOrder = order === "asc" ? 1 : -1;
 
