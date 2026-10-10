@@ -5,9 +5,7 @@ import recordAuditLog from "../utils/auditLog.js";
 export const createContact = async (req, res, next) => {
   try {
     const contact = await Contact.create(req.body);
-
     const io = req.app.get("io");
-
     io?.to("admin").emit("new_notification", {
       notification: {
         title: "New Enquiry",
@@ -20,12 +18,7 @@ export const createContact = async (req, res, next) => {
       },
     });
 
-    return successResponse(
-      res,
-      "Enquiry submitted successfully",
-      contact,
-      201,
-    );
+    return successResponse(res, "Enquiry submitted successfully", contact, 201);
   } catch (error) {
     next(error);
   }
