@@ -1,29 +1,74 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
 const addressSchema = new mongoose.Schema(
   {
-    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    fullName: { type: String, required: true, trim: true },
-    mobile: { type: String, required: true, trim: true },
-    address: { type: String, required: true, trim: true },
-    city: { type: String, required: true, trim: true },
-    state: { type: String, required: true, trim: true },
-    pincode: { type: String, required: true, trim: true },
-    country: { type: String, required: true, trim: true },
-    isDefault: { type: Boolean, default: false },
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    fullName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    mobile: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    address: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    city: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    state: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    pincode: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    country: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    isDefault: {
+      type: Boolean,
+      default: false,
+    },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  },
 );
 
-addressSchema.pre('save', async function (next) {
-  if (this.isDefault) {
-    await this.model('Address').updateMany(
-      { user: this.user, _id: { $ne: this._id } },
-      { isDefault: false }
-    );
-  }
-  next();
+addressSchema.pre("save", async function () {
+  if (!this.isDefault) return;
+
+  await this.model("Address").updateMany(
+    {
+      user: this.user,
+      _id: { $ne: this._id },
+    },
+    {
+      $set: {
+        isDefault: false,
+      },
+    },
+  );
 });
 
-const Address = mongoose.model('Address', addressSchema);
+const Address =
+  mongoose.models.Address || mongoose.model("Address", addressSchema);
+
 export default Address;
