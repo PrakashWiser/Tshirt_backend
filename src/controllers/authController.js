@@ -158,6 +158,32 @@ export const logoutUser = async (req, res, next) => {
   }
 };
 
+export const registerDeviceToken = async (req, res, next) => {
+  try {
+    const { expoPushToken } = req.body || {};
+
+    if (!expoPushToken || typeof expoPushToken !== 'string' || !expoPushToken.trim()) {
+      return errorResponse(res, 'Valid Expo push token is required', 400);
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { $set: { expoPushToken: expoPushToken.trim() } },
+      { new: true },
+    ).select('-password');
+
+    if (!user) {
+      return errorResponse(res, 'User not found', 404);
+    }
+
+    return successResponse(res, 'Device token registered successfully', {
+      expoPushToken: user.expoPushToken,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getCurrentUser = async (req, res) => {
   const isAdmin = req.user && req.user.role === 'admin';
   const message = isAdmin ? 'Admin fetched successfully' : 'User fetched successfully';

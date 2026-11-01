@@ -6,6 +6,7 @@ import app from "./app.js";
 import connectDatabase from "./config/database.js";
 import Order from "./models/Order.js";
 import { authenticateSocket } from "./middleware/socketAuthMiddleware.js";
+import { sendDueOffers } from "./services/offerPushService.js";
 
 const startServer = async () => {
   try {
@@ -57,6 +58,11 @@ const startServer = async () => {
     });
 
     app.set("io", io);
+
+    void sendDueOffers();
+    setInterval(() => {
+      void sendDueOffers();
+    }, 60 * 1000);
 
     server.listen(port, () => {
       console.log(`🚀 Server Running on port ${port}`);

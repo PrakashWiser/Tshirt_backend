@@ -20,6 +20,7 @@ import contactRoutes from "./routes/contactRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import bannerRoutes from "./routes/bannerRoutes.js";
 import chatRoutes from "./routes/chatRoutes.js";
+import offerRoutes from "./routes/offerRoutes.js";
 import fileUpload from "express-fileupload";
 
 import {
@@ -86,6 +87,7 @@ app.use("/api/contact", contactRoutes);
 app.use("/api/enquiries", contactRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/banners", bannerRoutes);
+app.use("/api/offers", offerRoutes);
 app.use("/api", reviewRoutes);
 app.use("/api/chat", chatRoutes);
 

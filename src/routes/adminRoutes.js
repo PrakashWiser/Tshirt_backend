@@ -83,6 +83,14 @@ import {
   deleteCoupon,
   updateCouponStatus,
 } from '../controllers/couponController.js';
+import {
+  getAllOffers,
+  getOfferById,
+  createOffer,
+  updateOffer,
+  deleteOffer,
+  updateOfferStatus,
+} from '../controllers/offerController.js';
 
 const router = express.Router();
 router.use(protect, authorize('admin'));
@@ -103,6 +111,12 @@ router.post('/coupons', createCoupon);
 router.put('/coupons/:id', updateCoupon);
 router.patch('/coupons/:id/status', updateCouponStatus);
 router.delete('/coupons/:id', deleteCoupon);
+router.get('/offers', getAllOffers);
+router.get('/offers/:id', getOfferById);
+router.post('/offers', createOffer);
+router.put('/offers/:id', updateOffer);
+router.patch('/offers/:id/status', updateOfferStatus);
+router.delete('/offers/:id', deleteOffer);
 router.patch('/customers/:id/status', updateCustomerStatus);
 
 export default router;

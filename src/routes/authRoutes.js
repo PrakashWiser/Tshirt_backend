@@ -64,6 +64,7 @@ import {
   registerUser,
   loginUser,
   logoutUser,
+  registerDeviceToken,
   getCurrentUser,
   updateCurrentUserProfile,
   updateCurrentUserProfilePhoto,
@@ -80,6 +81,7 @@ router.post('/register', registerUser);
 router.post('/login', loginUser);
 router.post('/refresh-token', refreshAccessToken);
 router.post('/logout', protect, logoutUser);
+router.post('/device-token', protect, registerDeviceToken);
 router.get('/me', protect, getCurrentUser);
 router.put('/profile', protect, updateCurrentUserProfile);
 router.put('/profile-photo', protect, updateCurrentUserProfilePhoto);
