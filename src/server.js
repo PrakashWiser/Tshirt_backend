@@ -10,7 +10,9 @@ import { authenticateSocket } from "./middleware/socketAuthMiddleware.js";
 const startServer = async () => {
   try {
     await connectDatabase();
+
     const port = Number(process.env.PORT || 3100);
+
     const allowedOrigins = process.env.FRONTEND_URL
       ? process.env.FRONTEND_URL.split(",").map((origin) => origin.trim())
       : ["http://localhost:5173"];
@@ -59,6 +61,7 @@ const startServer = async () => {
     server.listen(port, () => {
       console.log(`🚀 Server Running on port ${port}`);
     });
+    
   } catch (error) {
     console.error("Server startup error:", error);
     process.exit(1);
