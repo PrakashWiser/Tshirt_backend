@@ -1,6 +1,7 @@
 import Coupon from '../models/Coupon.js';
 import { successResponse, errorResponse } from '../utils/response.js';
 import recordAuditLog from '../utils/auditLog.js';
+import { sendCouponPushToCustomers } from '../services/couponPushService.js';
 
 export const getAllCoupons = async (req, res, next) => {
   try {
@@ -90,7 +91,35 @@ export const createCoupon = async (req, res, next) => {
       description: `Coupon ${coupon.code} was created`,
       metadata: { code: coupon.code },
     });
-    return successResponse(res, 'Coupon created successfully', coupon, 201);
+
+    let notificationMessage;
+    if (!coupon.isActive) {
+      notificationMessage = 'Push notification was not sent because the coupon is inactive.';
+    } else {
+      try {
+        const result = await sendCouponPushToCustomers(coupon);
+        if (result.total === 0) {
+          notificationMessage = 'No customer devices are registered for push notifications.';
+        } else {
+          notificationMessage = `Push notification accepted by Expo for ${result.sent} of ${result.total} customer devices.`;
+          if (result.failed > 0) {
+            console.error(
+              `Coupon notification was not accepted for ${result.failed} device(s).`,
+            );
+          }
+        }
+      } catch (error) {
+        console.error('Coupon was created, but its push notification could not be sent.', error);
+        notificationMessage = 'Push notification could not be sent.';
+      }
+    }
+
+    return successResponse(
+      res,
+      `Coupon created successfully. ${notificationMessage}`,
+      coupon,
+      201,
+    );
   } catch (error) {
     next(error);
   }
